@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using OpenQA.Selenium.Appium;
+using OpenQA.Selenium.Appium.Service;
 using OpenQA.Selenium.Appium.Windows;
 
 
@@ -12,8 +13,9 @@ namespace AppiumCalculatorTests
         private const string appLocation = @"C:\Users\Lenovo\SummatorDesktopApp.exe";
         private WindowsDriver<WindowsElement> driver;
         private AppiumOptions appiumOptions;
+        //private AppiumLocalService appiumLocalService;
 
-        [SetUp]
+        [OneTimeSetUp]
         public void OpenApplication()
         {
             this.appiumOptions = new AppiumOptions(); 
@@ -21,18 +23,48 @@ namespace AppiumCalculatorTests
             appiumOptions.AddAdditionalCapability("app", appLocation);
             appiumOptions.AddAdditionalCapability("PlatformName", "Windows");
             this.driver = new WindowsDriver<WindowsElement>(new Uri(appiumServer), appiumOptions);
+
+            
+
+            //Another set up - Start the Appium server as local Node.js app
+            /*this.appiumLocalService = new AppiumServiceBuilder().UsingAnyFreePort().Build();
+            appiumLocalService.Start();
+            this.appiumOptions = new AppiumOptions();
+            appiumOptions.AddAdditionalCapability("app", appLocation);
+            appiumOptions.AddAdditionalCapability("PlatformName", "Windows");
+            this.driver = new WindowsDriver<WindowsElement>(appiumLocalService,appiumOptions);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);*/
         }
 
-        [TearDown]
+        [OneTimeTearDown]
         public void CloseApplication()
         {
+            driver.CloseApp();
             driver.Quit();
         }
 
-        [Test]
-        public void Test_Sum_TwoPositiveNumbers()
+        [TestCase("5", "15", "20")]
+        [TestCase("5", "alabala", "error")]
+        [TestCase("alabala", "15", "error")]
+        [TestCase("30", "15", "45")]
+        [TestCase("-30", "15", "-15")]
+        public void Test_SumNumbers(string firstNumber, string secondNumber, string result)
         {
-            Assert.Pass();
+            //Arrange
+            var firstNum = driver.FindElementByAccessibilityId("textBoxFirstNum");
+            var secondNum = driver.FindElementByAccessibilityId("textBoxSecondNum");
+            var resultField = driver.FindElementByAccessibilityId("textBoxSum");
+            var calculateButton = driver.FindElementByAccessibilityId("buttonCalc");
+ 
+            //Act
+            firstNum.Clear();
+            secondNum.Clear();
+            firstNum.SendKeys(firstNumber);
+            secondNum.SendKeys(secondNumber);
+            calculateButton.Click();
+
+            //Assert
+            Assert.That(resultField.Text, Is.EqualTo(result));
         }
     }
 }
